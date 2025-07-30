@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Checkout - TG's Kitchen</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      background-image: url('https://i.postimg.cc/hGWTVJhG/IMG-20250725-135828.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .checkout-container {
+      padding: 25px;
+      border-radius: 12px;
+      max-width: 750px;
+      margin: 60px auto;
+      position: relative;
+      z-index: 2;
+      color: #fff;
+      text-shadow: 1px 1px 3px #000;
+    }
+
+    .cart-item {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 10px 0;
+      gap: 15px;
+    }
+
+    .cart-item img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .cart-info {
+      flex-grow: 1;
+    }
+
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .quantity-controls button {
+      padding: 5px 10px;
+      font-size: 18px;
+      border: none;
+      background-color: #f4511e;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    form {
+      margin-top: 20px;
+    }
+
+    form input,
+    form select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #fff;
+      background: rgba(255, 255, 255, 0.9);
+      color: #000;
+      box-sizing: border-box;
+    }
+
+    form input::placeholder {
+      color: #555;
+    }
+
+    form button {
+      width: 100%;
+      padding: 12px;
+      background-color: #f4511e;
+      color: white;
+      border: none;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    h3 {
+      color: #000;
+      font-weight: bold;
+      background: rgba(255,255,255,0.8);
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    /* ✅ Responsive Fixes */
+    @media (max-width: 600px) {
+      .checkout-container {
+        margin: 30px 15px;
+        padding: 15px;
+      }
+
+      .cart-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .cart-item img {
+        width: 100%;
+        height: auto;
+      }
+
+      form input,
+      form select,
+      form button {
+        font-size: 15px;
+        padding: 10px;
+      }
+
+      h3 {
+        font-size: 16px;
+      }
+
+      .quantity-controls button {
+        font-size: 16px;
+        padding: 5px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="checkout-container">
+    <h2>Checkout</h2>
+    <div id="checkoutItems"></div>
+    <h3>Total: ₦<span id="totalPrice">0.00</span></h3>
+
+    <form onsubmit="return sendToWhatsApp()">
+      <input type="text" id="fullname" placeholder="Full Name" required>
+      <input type="text" id="address" placeholder="Delivery Address" required>
+      <input type="tel" id="phone" placeholder="Phone Number" required>
+
+      <select id="deliveryOption" onchange="updateTotal()">
+        <option value="0">Select Delivery Location</option>
+        <option value="1500">Town - ₦1,500</option>
+        <option value="1000">Bonsaac - ₦1,000</option>
+        <option value="4000">Ogwashi - ₦4,000</option>
+        <option value="2500">Ibuzor - ₦2,500</option>
+      </select>
+
+      <button type="submit">Place Order via WhatsApp</button>
+    </form>
+  </div>
+
+  <script>
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    let deliveryFee = 0;
+
+    function renderCheckout() {
+      const container = document.getElementById("checkoutItems");
+      let total = 0;
+      container.innerHTML = "";
+
+      cart.forEach((item, index) => {
+        total += item.price * item.quantity;
+        container.innerHTML += `
+          <div class="cart-item">
+            <img src="${item.image}" alt="${item.name}">
+            <div class="cart-info">
+              <p><strong>${item.name}</strong></p>
+              <p>₦${item.price.toFixed(2)}</p>
+              <div class="quantity-controls">
+                <button onclick="changeQuantity(${index}, -1)">−</button>
+                <span>${item.quantity}</span>
+                <button onclick="changeQuantity(${index}, 1)">+</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById("totalPrice").textContent = (total + deliveryFee).toFixed(2);
+      localStorage.setItem("cart", JSON.stringify(cart));
+    }
+
+    function changeQuantity(index, delta) {
+      if (cart[index]) {
+        cart[index].quantity += delta;
+        if (cart[index].quantity <= 0) {
+          cart.splice(index, 1);
+        }
+        renderCheckout();
+      }
+    }
+
+    function updateTotal() {
+      const fee = parseFloat(document.getElementById("deliveryOption").value);
+      deliveryFee = isNaN(fee) ? 0 : fee;
+      renderCheckout();
+    }
+
+    function sendToWhatsApp() {
+      const name = document.getElementById("fullname").value;
+      const address = document.getElementById("address").value;
+      const phone = document.getElementById("phone").value;
+      const delivery = document.getElementById("deliveryOption").selectedOptions[0].text;
+
+      let message = `🛒 *New Order from TG's Kitchen*%0A`;
+      message += `👤 *Name:* ${name}%0A`;
+      message += `📞 *Phone:* ${phone}%0A`;
+      message += `🏠 *Address:* ${address}%0A`;
+      message += `🚚 *Delivery:* ${delivery}%0A%0A`;
+      message += `🍽️ *Items:*%0A`;
+
+      let total = 0;
+      cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+        message += `• ${item.name} (₦${item.price}) x${item.quantity} = ₦${itemTotal.toFixed(2)}%0A`;
+      });
+
+      message += `%0A💵 *Subtotal:* ₦${total.toFixed(2)}`;
+      message += `%0A🚚 *Delivery Fee:* ₦${deliveryFee.toFixed(2)}`;
+      message += `%0A🧾 *Total:* ₦${(total + deliveryFee).toFixed(2)}`;
+
+      const whatsappURL = `https://wa.me/2349061120754?text=${message}`;
+      window.open(whatsappURL, "_blank");
+      return false;
+    }
+
+    renderCheckout();
+  </script>
+</body>
+</html>
