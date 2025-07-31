@@ -171,13 +171,13 @@
       container.innerHTML = "";
 
       cart.forEach((item, index) => {
-        total += item.price * item.quantity;
+        total += parseFloat(item.price) * parseInt(item.quantity);
         container.innerHTML += `
           <div class="cart-item">
             <img src="${item.image}" alt="${item.name}">
             <div class="cart-info">
               <p><strong>${item.name}</strong></p>
-              <p>₦${item.price.toFixed(2)}</p>
+              <p>₦${parseFloat(item.price).toFixed(2)}</p>
               <div class="quantity-controls">
                 <button onclick="changeQuantity(${index}, -1)">−</button>
                 <span>${item.quantity}</span>
@@ -223,16 +223,18 @@
 
       let total = 0;
       cart.forEach(item => {
-        const itemTotal = item.price * item.quantity;
+        const price = parseFloat(item.price);
+        const quantity = parseInt(item.quantity);
+        const itemTotal = price * quantity;
         total += itemTotal;
-        message += `• ${item.name} (₦${item.price}) x${item.quantity} = ₦${itemTotal.toFixed(2)}%0A`;
+        message += `• ${item.name} (₦${price}) x${quantity} = ₦${itemTotal.toFixed(2)}%0A`;
       });
 
       message += `%0A💵 *Subtotal:* ₦${total.toFixed(2)}`;
       message += `%0A🚚 *Delivery Fee:* ₦${deliveryFee.toFixed(2)}`;
       message += `%0A🧾 *Total:* ₦${(total + deliveryFee).toFixed(2)}`;
 
-      const whatsappURL = `https://wa.me/2349061120754?text=${message}`;
+      const whatsappURL = `https://wa.me/2349061120754?text=${encodeURI(message)}`;
       window.open(whatsappURL, "_blank");
       return false;
     }

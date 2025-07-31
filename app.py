@@ -47,6 +47,16 @@ def menu():
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
+    if 'admin_logged_in' not in session:
+        if request.method == 'POST':
+            password = request.form.get('password')
+            if password == 'admin234':
+                session['admin_logged_in'] = True
+                return redirect(url_for('admin'))
+            else:
+                return render_template('admin.html', error="Incorrect password")
+        return render_template('admin.html', login=True)
+
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
@@ -96,7 +106,6 @@ def edit_meal(meal_id):
     conn.close()
     return redirect(url_for('admin'))
 
-# ✅ FIXED: DELETE should use POST
 @app.route('/delete/<int:meal_id>', methods=['POST'])
 def delete_meal(meal_id):
     conn = sqlite3.connect(DB_NAME)
