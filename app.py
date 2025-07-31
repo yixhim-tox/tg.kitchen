@@ -2,10 +2,19 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 import sqlite3
 import os
 from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader  # ✅ Cloudinary added
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 DB_NAME = 'meals.db'
+
+# ✅ Cloudinary Configuration
+cloudinary.config(
+    cloud_name='denmxg0a5',      # 🔁 Replace with actual cloud name
+    api_key='272213367143922',            # 🔁 Replace with your Cloudinary API key
+    api_secret='w-ABxei5675kKaZdysi9ncxvHi8'       # 🔁 Replace with your Cloudinary API secret
+)
 
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -172,6 +181,20 @@ def api_meals():
             'category': meal['category'] or 'Meals'
         })
     return jsonify(result)
+
+# ✅ CLOUDINARY UPLOAD ROUTE
+@app.route('/api/upload_image', methods=['POST'])
+def upload_image():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file provided'}), 400
+
+    image = request.files['image']
+
+    try:
+        upload_result = cloudinary.uploader.upload(image)
+        return jsonify({'url': upload_result['secure_url']})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
